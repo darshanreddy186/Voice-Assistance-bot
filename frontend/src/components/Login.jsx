@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useLanguage } from "../context/LanguageContext";
 
 const API = import.meta.env.VITE_API_URL || "http://localhost:8000";
 
@@ -14,6 +15,7 @@ const labelStyle = {
 };
 
 export default function Login({ onLogin }) {
+  const { t } = useLanguage();
   const [isSignup, setIsSignup] = useState(false);
   const [form, setForm] = useState({
     phone: "",
@@ -64,13 +66,22 @@ export default function Login({ onLogin }) {
       borderRadius: 16,
       boxShadow: "0 10px 40px rgba(0,0,0,0.5)"
     }}>
+      {/* Logo */}
+      <div style={{ textAlign: "center", marginBottom: "1.5rem" }}>
+        <img 
+          src="/logo.svg" 
+          alt="AutomatonAI Logo" 
+          style={{ width: "80px", height: "80px", marginBottom: "1rem" }}
+        />
+      </div>
+      
       <h2 style={{ 
         textAlign: "center", 
         marginBottom: "0.5rem", 
         fontSize: "1.8rem",
         color: "#e2e8f0"
       }}>
-        {isSignup ? "Create Account" : "Welcome Back"}
+        {isSignup ? t("createAccount") : t("welcomeBack")}
       </h2>
       <p style={{ 
         textAlign: "center", 
@@ -78,14 +89,14 @@ export default function Login({ onLogin }) {
         marginBottom: "2rem",
         fontSize: "0.9rem"
       }}>
-        {isSignup ? "Sign up to start ordering" : "Login to continue"}
+        {isSignup ? t("signupSubtitle") : t("loginSubtitle")}
       </p>
 
       <form onSubmit={handleSubmit}>
         {isSignup && (
           <>
             <label style={labelStyle}>
-              First Name
+              {t("firstName")}
               <input 
                 style={inputStyle} 
                 value={form.first_name} 
@@ -96,7 +107,7 @@ export default function Login({ onLogin }) {
             </label>
 
             <label style={labelStyle}>
-              Last Name
+              {t("lastName")}
               <input 
                 style={inputStyle} 
                 value={form.last_name} 
@@ -109,7 +120,7 @@ export default function Login({ onLogin }) {
         )}
 
         <label style={labelStyle}>
-          Phone Number (with country code)
+          {t("phoneNumber")}
           <input 
             style={inputStyle} 
             value={form.phone} 
@@ -121,7 +132,7 @@ export default function Login({ onLogin }) {
 
         {isSignup && (
           <label style={labelStyle}>
-            Delivery Address
+            {t("deliveryAddress")}
             <textarea 
               style={{ ...inputStyle, minHeight: 80, resize: "vertical" }} 
               value={form.address} 
@@ -162,7 +173,7 @@ export default function Login({ onLogin }) {
             marginBottom: "1rem"
           }}
         >
-          {loading ? "Processing..." : isSignup ? "Sign Up" : "Login"}
+          {loading ? t("processing") : isSignup ? t("signUp") : t("login")}
         </button>
 
         <div style={{ textAlign: "center" }}>
@@ -181,7 +192,7 @@ export default function Login({ onLogin }) {
               textDecoration: "underline"
             }}
           >
-            {isSignup ? "Already have an account? Login" : "Don't have an account? Sign up"}
+            {isSignup ? t("alreadyHaveAccount") : t("dontHaveAccount")}
           </button>
         </div>
       </form>

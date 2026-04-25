@@ -1,8 +1,10 @@
 import { useState, useEffect } from "react";
+import { useLanguage } from "../context/LanguageContext";
 
 const API = import.meta.env.VITE_API_URL || "http://localhost:8000";
 
 export default function ProductList({ userId, onCartUpdate }) {
+  const { t } = useLanguage();
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [addingToCart, setAddingToCart] = useState({});
@@ -61,7 +63,7 @@ export default function ProductList({ userId, onCartUpdate }) {
   return (
     <div>
       <h2 style={{ marginBottom: "1.5rem", fontSize: "1.5rem", color: "#e2e8f0" }}>
-        Available Products
+        {t("availableProducts")}
       </h2>
 
       <div style={{ 
@@ -147,7 +149,7 @@ export default function ProductList({ userId, onCartUpdate }) {
                     opacity: addingToCart[product.id] ? 0.6 : 1
                   }}
                 >
-                  {addingToCart[product.id] ? "Adding..." : "Add to Cart"}
+                  {addingToCart[product.id] ? t("adding") : t("addToCart")}
                 </button>
               </div>
             </div>

@@ -1,16 +1,18 @@
 import { useState, useEffect } from "react";
+import { useLanguage } from "../context/LanguageContext";
 import ProductList from "./ProductList";
 import Cart from "./Cart";
 import MyOrders from "./MyOrders";
 
 export default function UserPortal({ user }) {
+  const { t } = useLanguage();
   const [activeTab, setActiveTab] = useState("products");
   const [cartCount, setCartCount] = useState(0);
 
   const tabs = [
-    { id: "products", label: "🛍️ Products", icon: "🛍️" },
-    { id: "cart", label: "🛒 Cart", icon: "🛒", badge: cartCount },
-    { id: "orders", label: "📦 My Orders", icon: "📦" }
+    { id: "products", label: t("products"), icon: "🛍️" },
+    { id: "cart", label: t("cart"), icon: "🛒", badge: cartCount },
+    { id: "orders", label: t("myOrders"), icon: "📦" }
   ];
 
   return (

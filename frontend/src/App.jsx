@@ -2,10 +2,14 @@ import { useState, useEffect } from "react";
 import Login from "./components/Login";
 import UserPortal from "./components/UserPortal";
 import AdminDashboard from "./components/AdminDashboard";
+import LandingPage from "./components/LandingPage";
+import { LanguageProvider, useLanguage } from "./context/LanguageContext";
 
-export default function App() {
+function AppContent() {
   const [user, setUser] = useState(null);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [showLogin, setShowLogin] = useState(false);
+  const { language, setLanguage, t } = useLanguage();
 
   useEffect(() => {
     // Check if user is logged in
@@ -24,6 +28,7 @@ export default function App() {
   const handleLogin = (userData) => {
     setUser(userData);
     localStorage.setItem("user", JSON.stringify(userData));
+    setShowLogin(false);
   };
 
   const handleLogout = () => {
@@ -37,6 +42,13 @@ export default function App() {
     localStorage.setItem("adminMode", newMode.toString());
   };
 
+  const LANGUAGES = [
+    { code: "en-US", label: "English", flag: "🇬🇧" },
+    { code: "hi-IN", label: "हिंदी", flag: "🇮🇳" },
+    { code: "kn-IN", label: "ಕನ್ನಡ", flag: "🇮🇳" },
+    { code: "mr-IN", label: "मराठी", flag: "🇮🇳" },
+  ];
+
   return (
     <div style={{ minHeight: "100vh", background: "#0f172a" }}>
       {/* Header */}
@@ -48,16 +60,44 @@ export default function App() {
         justifyContent: "space-between",
         alignItems: "center"
       }}>
-        <div>
-          <h1 style={{ fontSize: "1.5rem", color: "#7c3aed", margin: 0 }}>
-            🤖 Automaton AI
-          </h1>
-          <p style={{ color: "#94a3b8", fontSize: "0.85rem", margin: 0 }}>
-            AI-Powered Voice Order System
-          </p>
+        <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
+          <img 
+            src="/logo.svg" 
+            alt="AutomatonAI Logo" 
+            style={{ width: "50px", height: "50px" }}
+          />
+          <div>
+            <h1 style={{ fontSize: "1.5rem", color: "#7c3aed", margin: 0 }}>
+              {t("appTitle")}
+            </h1>
+            <p style={{ color: "#94a3b8", fontSize: "0.85rem", margin: 0 }}>
+              {t("appSubtitle")}
+            </p>
+          </div>
         </div>
         
         <div style={{ display: "flex", gap: "1rem", alignItems: "center" }}>
+          {/* Language Selector */}
+          <select
+            value={language}
+            onChange={(e) => setLanguage(e.target.value)}
+            style={{
+              padding: "0.5rem 1rem",
+              borderRadius: 6,
+              border: "1px solid #7c3aed",
+              background: "#0f172a",
+              color: "#e2e8f0",
+              cursor: "pointer",
+              fontSize: "0.9rem"
+            }}
+          >
+            {LANGUAGES.map((lang) => (
+              <option key={lang.code} value={lang.code}>
+                {lang.flag} {lang.label}
+              </option>
+            ))}
+          </select>
+
           {user && (
             <>
               <span style={{ color: "#cbd5e1", fontSize: "0.9rem" }}>
@@ -75,7 +115,7 @@ export default function App() {
                   fontSize: "0.85rem"
                 }}
               >
-                {isAdmin ? "👨‍💼 Admin Mode" : "🛒 User Mode"}
+                {isAdmin ? `👨‍💼 ${t("adminMode")}` : `🛒 ${t("userMode")}`}
               </button>
               <button
                 onClick={handleLogout}
@@ -89,7 +129,7 @@ export default function App() {
                   fontSize: "0.85rem"
                 }}
               >
-                Logout
+                {t("logout")}
               </button>
             </>
           )}
@@ -99,7 +139,11 @@ export default function App() {
       {/* Main Content */}
       <main>
         {!user ? (
-          <Login onLogin={handleLogin} />
+          showLogin ? (
+            <Login onLogin={handleLogin} />
+          ) : (
+            <LandingPage onGetStarted={() => setShowLogin(true)} />
+          )
         ) : isAdmin ? (
           <AdminDashboard />
         ) : (
@@ -107,5 +151,13 @@ export default function App() {
         )}
       </main>
     </div>
+  );
+}
+
+export default function App() {
+  return (
+    <LanguageProvider>
+      <AppContent />
+    </LanguageProvider>
   );
 }

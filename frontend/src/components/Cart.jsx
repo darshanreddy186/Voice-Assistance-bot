@@ -1,21 +1,15 @@
 import { useState, useEffect } from "react";
+import { useLanguage } from "../context/LanguageContext";
 
 const API = import.meta.env.VITE_API_URL || "http://localhost:8000";
 
-const LANGUAGES = [
-  { code: "en-US", label: "English 🇬🇧" },
-  { code: "hi-IN", label: "Hindi 🇮🇳" },
-  { code: "kn-IN", label: "Kannada 🇮🇳" },
-  { code: "mr-IN", label: "Marathi 🇮🇳" },
-];
-
 export default function Cart({ userId, user, onCartUpdate }) {
+  const { language, t } = useLanguage();
   const [cart, setCart] = useState([]);
   const [loading, setLoading] = useState(true);
   const [placing, setPlacing] = useState(false);
   const [deliveryDate, setDeliveryDate] = useState("");
   const [deliveryTime, setDeliveryTime] = useState("");
-  const [language, setLanguage] = useState("en-US");
   const [status, setStatus] = useState(null);
 
   useEffect(() => {
@@ -69,7 +63,7 @@ export default function Cart({ userId, user, onCartUpdate }) {
         body: JSON.stringify({
           user_id: userId,
           delivery_datetime: deliveryDatetime,
-          language: language
+          language: language  // Use global language
         })
       });
 
@@ -78,7 +72,8 @@ export default function Cart({ userId, user, onCartUpdate }) {
       if (data.success) {
         setStatus({ 
           type: "success", 
-          msg: "🎉 Order placed! You'll receive a call in 30 seconds to confirm." 
+          msg: t("orderPlacedMsg")
+
         });
         setTimeout(() => {
           fetchCart();
@@ -109,8 +104,8 @@ export default function Cart({ userId, user, onCartUpdate }) {
         borderRadius: 12 
       }}>
         <div style={{ fontSize: "4rem", marginBottom: "1rem" }}>🛒</div>
-        <h3 style={{ color: "#e2e8f0", marginBottom: "0.5rem" }}>Your cart is empty</h3>
-        <p style={{ color: "#94a3b8" }}>Add some delicious items to get started!</p>
+        <h3 style={{ color: "#e2e8f0", marginBottom: "0.5rem" }}>{t("cartEmpty")}</h3>
+        <p style={{ color: "#94a3b8" }}>{t("cartEmptyMsg")}</p>
       </div>
     );
   }
@@ -118,7 +113,7 @@ export default function Cart({ userId, user, onCartUpdate }) {
   return (
     <div>
       <h2 style={{ marginBottom: "1.5rem", fontSize: "1.5rem", color: "#e2e8f0" }}>
-        Your Cart ({cart.length} items)
+        {t("yourCart")} ({cart.length} {t("items")})
       </h2>
 
       <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: "2rem" }}>
@@ -143,7 +138,7 @@ export default function Cart({ userId, user, onCartUpdate }) {
                   {item.products.name}
                 </h4>
                 <p style={{ color: "#94a3b8", fontSize: "0.9rem" }}>
-                  Quantity: {item.quantity} × ₹{item.products.price}
+                  {t("quantity")}: {item.quantity} × ₹{item.products.price}
                 </p>
               </div>
 
@@ -163,7 +158,7 @@ export default function Cart({ userId, user, onCartUpdate }) {
                     fontSize: "0.85rem"
                   }}
                 >
-                  Remove
+                  {t("remove")}
                 </button>
               </div>
             </div>
@@ -181,12 +176,12 @@ export default function Cart({ userId, user, onCartUpdate }) {
             top: 20
           }}>
             <h3 style={{ color: "#e2e8f0", marginBottom: "1.5rem", fontSize: "1.2rem" }}>
-              Order Summary
+              {t("orderSummary")}
             </h3>
 
             <div style={{ marginBottom: "1rem" }}>
               <label style={{ display: "block", color: "#94a3b8", fontSize: "0.85rem", marginBottom: "0.5rem" }}>
-                Delivery Date
+                {t("deliveryDate")}
               </label>
               <input
                 type="date"
@@ -205,9 +200,9 @@ export default function Cart({ userId, user, onCartUpdate }) {
               />
             </div>
 
-            <div style={{ marginBottom: "1rem" }}>
+            <div style={{ marginBottom: "1.5rem" }}>
               <label style={{ display: "block", color: "#94a3b8", fontSize: "0.85rem", marginBottom: "0.5rem" }}>
-                Delivery Time
+                {t("deliveryTime")}
               </label>
               <input
                 type="time"
@@ -225,43 +220,18 @@ export default function Cart({ userId, user, onCartUpdate }) {
               />
             </div>
 
-            <div style={{ marginBottom: "1.5rem" }}>
-              <label style={{ display: "block", color: "#94a3b8", fontSize: "0.85rem", marginBottom: "0.5rem" }}>
-                Call Language
-              </label>
-              <select
-                value={language}
-                onChange={(e) => setLanguage(e.target.value)}
-                style={{
-                  width: "100%",
-                  padding: "0.6rem",
-                  borderRadius: 6,
-                  border: "1px solid #334155",
-                  background: "#0f172a",
-                  color: "#e2e8f0",
-                  fontSize: "0.9rem"
-                }}
-              >
-                {LANGUAGES.map((lang) => (
-                  <option key={lang.code} value={lang.code}>
-                    {lang.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-
             <div style={{ 
               borderTop: "1px solid #334155", 
               paddingTop: "1rem", 
               marginBottom: "1.5rem" 
             }}>
               <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.5rem" }}>
-                <span style={{ color: "#94a3b8" }}>Subtotal</span>
+                <span style={{ color: "#94a3b8" }}>{t("subtotal")}</span>
                 <span style={{ color: "#e2e8f0" }}>₹{total}</span>
               </div>
               <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.5rem" }}>
-                <span style={{ color: "#94a3b8" }}>Delivery</span>
-                <span style={{ color: "#059669" }}>FREE</span>
+                <span style={{ color: "#94a3b8" }}>{t("delivery")}</span>
+                <span style={{ color: "#059669" }}>{t("free")}</span>
               </div>
               <div style={{ 
                 display: "flex", 
@@ -271,7 +241,7 @@ export default function Cart({ userId, user, onCartUpdate }) {
                 color: "#7c3aed",
                 marginTop: "1rem"
               }}>
-                <span>Total</span>
+                <span>{t("total")}</span>
                 <span>₹{total}</span>
               </div>
             </div>
@@ -305,7 +275,7 @@ export default function Cart({ userId, user, onCartUpdate }) {
                 fontSize: "1rem"
               }}
             >
-              {placing ? "Placing Order..." : "🚀 Place Order"}
+              {placing ? t("placingOrder") : `🚀 ${t("placeOrder")}`}
             </button>
 
             <p style={{ 
@@ -314,7 +284,7 @@ export default function Cart({ userId, user, onCartUpdate }) {
               textAlign: "center", 
               marginTop: "1rem" 
             }}>
-              📞 You'll receive an AI call in 30 seconds to confirm your order
+              📞 {t("callNote")}
             </p>
           </div>
         </div>

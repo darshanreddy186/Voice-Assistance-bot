@@ -135,7 +135,7 @@ async def place_order(req: PlaceOrderRequest):
         clear_cart(req.user_id)
         
         # Schedule call after 30 seconds
-        asyncio.create_task(schedule_call_after_order(order["id"], delay_seconds=30))
+        asyncio.create_task(schedule_call_after_order(order["id"], delay_seconds=5))
         
         return {"success": True, "order": order}
         
@@ -219,9 +219,17 @@ async def process_speech(request: Request, order_id: str, turn: int = 1):
         if not user_input:
             return Response(content="<Response><Say>I didn't hear anything. Goodbye.</Say></Response>", media_type="application/xml")
         
-        # Get order and conversation history
+        # Get order and conversation history (current call only)
         order = get_order_by_id(order_id)
-        conversation = get_conversation_history(order_id)
+        all_conversation = get_conversation_history(order_id)
+        
+        # Filter to only turns from the current call_sid to avoid
+        # old call history making has_confirmed=True on a fresh call
+        if call_sid:
+            conversation = [t for t in all_conversation if t.get("call_sid") == call_sid]
+        else:
+            # Fallback: only use turns before current turn number
+            conversation = [t for t in all_conversation if t.get("turn_number", 0) < turn]
         
         # Process with AI
         ai_result = process_voice_input(user_input, order, conversation)
@@ -246,11 +254,50 @@ async def process_speech(request: Request, order_id: str, turn: int = 1):
         elif ai_result["intent"] == "cancel":
             update_order_status(order_id, "cancelled")
             
+        elif ai_result["intent"] == "keep_order":
+            # User wants to keep order as is
+            update_order_status(order_id, "confirmed")
+            
+        elif ai_result["intent"] == "no_query":
+            # User has no more questions - end call gracefully
+            update_order_status(order_id, "confirmed")
+            
+        elif ai_result["intent"] in ["query_location", "query_time", "query"]:
+            # These are queries, don't change status yet
+            pass
+            
+        elif ai_result["intent"] == "modify_time":
+            mods = ai_result["modifications"]
+            
+            if mods.get("time_change_approved"):
+                # Time change approved by AI, but we need to validate
+                new_time_str = mods.get("delivery_time")
+                if new_time_str:
+                    # Parse the new time
+                    new_time = parse_delivery_time_from_text(new_time_str, order["delivery_datetime"])
+                    
+                    # Validate time change (0-5 hours later)
+                    is_valid, hours_diff = validate_time_change(new_time, order["delivery_datetime"])
+                    
+                    if is_valid:
+                        # Update delivery time
+                        update_order_delivery(order_id, new_time)
+                        add_modification(order_id, "delivery_time", order["delivery_datetime"], 
+                                       new_time, user_input, ai_result["response_text"], ai_result["detected_language"])
+                        update_order_status(order_id, "confirmed")
+                    else:
+                        # Time change rejected - AI should have already sent rejection message
+                        # Just log it
+                        print(f"[API] Time change rejected: {hours_diff:.1f} hours difference (valid range: 0-5 hours later)")
+            else:
+                # Time change rejected by AI, keep conversation open
+                pass
+            
         elif ai_result["intent"] == "modify":
+            # Legacy modify intent
             mods = ai_result["modifications"]
             
             if mods.get("delivery_time"):
-                # Parse and update delivery time (simplified)
                 new_time = parse_delivery_time(mods["delivery_time"], order["delivery_datetime"])
                 update_order_delivery(order_id, new_time)
                 add_modification(order_id, "delivery_time", order["delivery_datetime"], 
@@ -361,3 +408,66 @@ def parse_delivery_time(time_str: str, current_delivery: str) -> str:
         new_time = current
     
     return new_time.isoformat()
+
+def parse_delivery_time_from_text(time_text: str, current_delivery: str) -> str:
+    """
+    Parse time from user input like "8 PM", "20:00", "8:30 PM" etc.
+    """
+    import re
+    from datetime import datetime, timedelta
+    
+    current = datetime.fromisoformat(current_delivery.replace('Z', '+00:00'))
+    
+    # Try to extract time patterns
+    # Pattern 1: "8 PM", "8PM", "8 pm"
+    match = re.search(r'(\d{1,2})\s*(pm|am|PM|AM)', time_text)
+    if match:
+        hour = int(match.group(1))
+        meridiem = match.group(2).upper()
+        
+        if meridiem == "PM" and hour != 12:
+            hour += 12
+        elif meridiem == "AM" and hour == 12:
+            hour = 0
+            
+        new_time = current.replace(hour=hour, minute=0, second=0)
+        return new_time.isoformat()
+    
+    # Pattern 2: "20:00", "08:30"
+    match = re.search(r'(\d{1,2}):(\d{2})', time_text)
+    if match:
+        hour = int(match.group(1))
+        minute = int(match.group(2))
+        new_time = current.replace(hour=hour, minute=minute, second=0)
+        return new_time.isoformat()
+    
+    # Pattern 3: Just number like "8", "20"
+    match = re.search(r'\b(\d{1,2})\b', time_text)
+    if match:
+        hour = int(match.group(1))
+        # Assume PM if hour is less than 12 and current time is afternoon
+        if hour < 12 and current.hour >= 12:
+            hour += 12
+        new_time = current.replace(hour=hour, minute=0, second=0)
+        return new_time.isoformat()
+    
+    # Default: return current time
+    return current.isoformat()
+
+def validate_time_change(new_time_str: str, original_time_str: str) -> tuple[bool, float]:
+    """
+    Validate if time change is within 0-5 hours LATER than original time.
+    Returns: (is_valid, hours_difference)
+    """
+    from datetime import datetime
+    
+    original = datetime.fromisoformat(original_time_str.replace('Z', '+00:00'))
+    new_time = datetime.fromisoformat(new_time_str.replace('Z', '+00:00'))
+    
+    # Calculate difference in hours
+    diff = (new_time - original).total_seconds() / 3600
+    
+    # Valid if 0 <= diff <= 5 (0 to 5 hours later)
+    is_valid = 0 <= diff <= 5
+    
+    return is_valid, diff

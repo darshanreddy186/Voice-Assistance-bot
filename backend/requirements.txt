@@ -3,6 +3,6 @@ uvicorn
 python-dotenv
 supabase
 twilio
-google-generativeai
+google-genai
 python-multipart
 gtts
