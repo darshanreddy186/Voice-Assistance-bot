@@ -55,3 +55,15 @@ npm run dev
 | SUPABASE_URL | Supabase project URL |
 | SUPABASE_KEY | Supabase anon key |
 | CALLBACK_URL | Your ngrok HTTPS URL |
+
+---
+
+
+<img width="1919" height="999" alt="Screenshot 2026-04-25 024241" src="https://github.com/user-attachments/assets/5b99e8bd-5dd0-4258-8f08-a9bcabe181d7" />
+
+<img width="1652" height="799" alt="Screenshot 2026-04-25 024245" src="https://github.com/user-attachments/assets/f088e280-09e7-46bf-8b94-9f7ebf4f626d" />
+
+<img width="1919" height="968" alt="Screenshot 2026-04-24 162045" src="https://github.com/user-attachments/assets/f6421ece-02ce-41be-9aa5-0f444428d94e" />
+
+
+
